@@ -37,120 +37,64 @@ public class OrderBook {
         });
     }
 
+    private void matchOrder(PriorityQueue<Order> queue, PriorityQueue<Order> oppQueue, Order incomingOrder, boolean isBuy, boolean isMarket) {
+
+        // no of shares required
+        int qty = incomingOrder.getQuantity();
+
+        while (qty > 0) {
+            // check the orderbook to see if any deals exists
+            Order oppositeOrders = oppQueue.peek();
+            if (oppositeOrders == null) break;
+
+            //check if deal is valid
+            boolean matchOccured = isMarket || (isBuy && oppositeOrders.getPrice() <= incomingOrder.getPrice()) || (!isBuy && oppositeOrders.getPrice() >= incomingOrder.getPrice());
+
+            if (!matchOccured) break;
+
+            //no of shares in the book
+            int bookQty = oppositeOrders.getQuantity();
+
+            //no of share a guy need
+            int reqQty = Math.min(bookQty, incomingOrder.getQuantity());
+
+//            reduce from the qty
+            qty -= reqQty;
+            System.out.println("Trade: " + reqQty + " units at price " + oppositeOrders.getPrice());
+
+            if (bookQty > reqQty) {
+                oppositeOrders.setQuantity(bookQty - reqQty);
+
+            } else {
+                oppQueue.remove();
+            }
+
+        }
+
+        if (qty > 0) {
+            incomingOrder.setQuantity(qty);
+            queue.add(incomingOrder);
+        }
+
+    }
 
 
     public boolean addOrder(Order order) {
         try {
             if (order.getQuantity() > 0) {
-                if (order.getOrderType() == OrderType.LIMIT) {
-                    if (order.getPrice() <= 0) {
-                        throw new Exception("Price should be greater than 0");
-                    }
-
-                    if (order.getSide() == Side.BUY) {
-                        int qty = order.getQuantity();
-                        while (qty > 0) {
-                            Order tmpOrder = sellOrders.peek();
-                            if (tmpOrder == null) {
-                                buyOrders.add(order);
-                                break;
-                            } else if (tmpOrder.getQuantity() > qty && tmpOrder.getPrice() <= order.getPrice()) {
-                                tmpOrder.setQuantity(tmpOrder.getQuantity() - qty);
-                                qty = 0;
-                            } else if (tmpOrder.getQuantity() == qty && tmpOrder.getPrice() <= order.getPrice()) {
-                                sellOrders.remove();
-                                qty = 0;
-                            } else if (tmpOrder.getQuantity() < qty && tmpOrder.getPrice() <= order.getPrice()) {
-                                qty = qty - tmpOrder.getQuantity();
-                                sellOrders.remove();
-
-                            } else {
-                                if( qty != order.getQuantity()){
-                                    order.setQuantity(qty);
-                                }
-                                    buyOrders.add(order);
-
-
-                                break;
-                            }
-                        }
-                    } else {
-                        int qty = order.getQuantity();
-                        while (qty > 0) {
-                            Order tmpOrder = buyOrders.peek();
-                            if (tmpOrder == null) {
-                                sellOrders.add(order);
-                                break;
-                            } else if (tmpOrder.getQuantity() > qty && tmpOrder.getPrice() >= order.getPrice()) {
-                                tmpOrder.setQuantity(tmpOrder.getQuantity() - qty);
-                                qty = 0;
-                            } else if (tmpOrder.getQuantity() == qty && tmpOrder.getPrice() >= order.getPrice()) {
-                                buyOrders.remove();
-                                qty = 0;
-                            } else if (tmpOrder.getQuantity() < qty && tmpOrder.getPrice() >= order.getPrice()) {
-                                qty = qty - tmpOrder.getQuantity();
-                                buyOrders.remove();
-
-                            } else {
-                                if( qty != order.getQuantity()){
-                                    order.setQuantity(qty);
-                                }
-                                sellOrders.add(order);
-                                break;
-                            }
-                        }
-                    }
-
-
-                }else{
-                    //Market order
-                    if (order.getSide() == Side.BUY ) {
-                        int qty = order.getQuantity();
-                        while (qty > 0) {
-                            Order tmpOrder = sellOrders.peek();
-                            if (tmpOrder == null) {
-                                if( qty != order.getQuantity()){
-                                    order.setQuantity(qty);
-                                }
-                                buyOrders.add(order);
-                                break;
-                            } else if (tmpOrder.getQuantity() > qty ) {
-                                tmpOrder.setQuantity(tmpOrder.getQuantity() - qty);
-                                qty = 0;
-                            }else if(tmpOrder.getQuantity() == qty ){
-                                qty=0;
-                                sellOrders.remove();
-                            }else {
-                                qty=qty- tmpOrder.getQuantity();
-                                sellOrders.remove();
-                            }
-                        }
-                    }else{
-                        int qty = order.getQuantity();
-                        while (qty > 0) {
-                            Order tmpOrder = buyOrders.peek();
-                            if (tmpOrder == null) {
-                                if( qty != order.getQuantity()){
-                                    order.setQuantity(qty);
-                                }
-                                sellOrders.add(order);
-                                break;
-                            } else if (tmpOrder.getQuantity() > qty ) {
-                                tmpOrder.setQuantity(tmpOrder.getQuantity() - qty);
-                                qty = 0;
-                            }else if(tmpOrder.getQuantity() == qty ){
-                                qty=0;
-                                buyOrders.remove();
-                            }else {
-                                qty=qty- tmpOrder.getQuantity();
-                                buyOrders.remove();
-                            }
-                        }
-                    }
-
-
+                if(order.getPrice()<=0){
+                    throw new Exception("Price should be greater than 0");
                 }
 
+                boolean isBuyOrder = order.getSide() == Side.BUY;
+
+                boolean isMarketType = order.getOrderType() == OrderType.MARKET;
+
+                if(isBuyOrder){
+                    matchOrder(buyOrders, sellOrders, order, true, isMarketType);
+                }else{
+                    matchOrder(sellOrders, buyOrders, order, false, isMarketType);
+                }
 
                 return true;
             } else {

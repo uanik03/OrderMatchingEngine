@@ -4,12 +4,13 @@ import java.sql.Timestamp;
 
 public class Order {
     private static int id=1;
-    private int orderId;
-    private Side side;
-    private OrderType orderType;
+    private final int orderId;
+//    private final Symbol symbol;
+    private final Side side;
+    private final OrderType orderType;
     private double price;
     private int quantity;
-    private long timestamp;
+    private final long timestamp;
 
 
     public Order(Side side, OrderType orderType, double price, int quantity) {
@@ -19,6 +20,16 @@ public class Order {
         this.timestamp = System.currentTimeMillis();
         this.quantity=quantity;
         this.orderId=id++;
+//        this.symbol = symbol;
+    }
+
+    public Order(int orderId,  Side side, OrderType orderType,  double price, int quantity) {
+        this.orderType = orderType;
+        this.side = side;
+        this.orderId = orderId;
+        this.price = price;
+        this.quantity = quantity;
+        this.timestamp = System.currentTimeMillis();
     }
 
     public Side getSide() {
@@ -47,5 +58,21 @@ public class Order {
 
     public void setQuantity(int quantity) {
         this.quantity = quantity;
+    }
+
+    public int getOrderId() {
+        return orderId;
+    }
+
+    @Override
+    public String toString() {
+        return "Order{" +
+                "orderId=" + orderId +
+                ", side=" + side +
+                ", orderType=" + orderType +
+                ", price=" + price +
+                ", quantity=" + quantity +
+                ", timestamp=" + timestamp +
+                '}';
     }
 }

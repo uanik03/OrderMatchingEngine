@@ -1,4 +1,4 @@
-# 🏛️ Simple Order Matching Engine
+# 🏛️ Order Matching Engine
 
 A multithreaded, symbol-aware, in-memory order matching engine built in Java.  
 This engine supports basic trading operations such as **placing orders**, **modifying**, **cancelling**, and **matching buy/sell orders** in real-time across multiple instruments (symbols).

@@ -25,5 +25,49 @@ bin/
 ### VS Code ###
 .vscode/
 
-### Mac OS ###
+
+# IntelliJ IDEA specific files
+.idea/
+*.iml
+
+# Java build artifacts
+/target/
+/out/
+/build/
+
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# Dependency directories
+/lib/
+
+# Maven/Gradle specific
+/.mvn/
+/.gradle/
+build/
+.gradle
+mvnw
+mvnw.cmd
+gradlew
+gradlew.bat
+
+# Local configuration files
+*.properties.local
+*.env
+
+# OS-specific files
 .DS_Store
+Thumbs.db
+
+# Other temporary files
+*.bak
+*.swp
+*~.nib
+*.tmp
+
+# Optional: Ignore dependency lock files if not needed
+pom.xml.versionsBackup
+dependency-reduced-pom.xml

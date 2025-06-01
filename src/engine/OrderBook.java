@@ -1,16 +1,12 @@
 package engine;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.PriorityQueue;
+import java.util.*;
 
 public class OrderBook {
     private PriorityQueue<Order> buyOrders;
-
-
     private PriorityQueue<Order> sellOrders;
     private Map<Integer, Order> activeOrders;
+    List<Trade> tradeHistory;
 
     public OrderBook() {
         this.sellOrders = new PriorityQueue<>(new Comparator<Order>() {
@@ -39,9 +35,10 @@ public class OrderBook {
         });
 
         this.activeOrders = new HashMap<>();
+        this.tradeHistory = new ArrayList<>();
     }
 
-    private void matchOrder(PriorityQueue<Order> queue, PriorityQueue<Order> oppQueue, Order incomingOrder, boolean isBuy, boolean isMarket) {
+    private synchronized void matchOrder(PriorityQueue<Order> queue, PriorityQueue<Order> oppQueue, Order incomingOrder, boolean isBuy, boolean isMarket) {
 
         // no of shares required
         int qty = incomingOrder.getQuantity();
@@ -65,6 +62,17 @@ public class OrderBook {
 //            reduce from the qty
             qty -= reqQty;
             System.out.println("Trade: " + reqQty + " units at price " + oppositeOrders.getPrice());
+            int buyId;
+            int sellId;
+            if (oppositeOrders.getSide() == Side.BUY) {
+                buyId = oppositeOrders.getOrderId();
+                sellId = incomingOrder.getOrderId();
+            } else {
+                sellId = oppositeOrders.getOrderId();
+                buyId = incomingOrder.getOrderId();
+            }
+            Trade tmpTrade = new Trade(buyId, sellId, oppositeOrders.getPrice(), reqQty);
+            tradeHistory.add(tmpTrade);
 
             if (bookQty > reqQty) {
                 oppositeOrders.setQuantity(bookQty - reqQty);
@@ -80,9 +88,11 @@ public class OrderBook {
                 System.err.println("Unfilled market order discarded: " + incomingOrder);
                 return;
             }
+
             incomingOrder.setQuantity(qty);
             queue.add(incomingOrder);
             activeOrders.put(incomingOrder.getOrderId(), incomingOrder);
+            System.out.println("Partially filled order added to book: " + incomingOrder);
         }
 
     }
@@ -91,9 +101,10 @@ public class OrderBook {
     public void addOrder(Order order) {
         try {
             if (order.getQuantity() > 0) {
-                if (order.getPrice() <= 0) {
+                if (order.getOrderType()==OrderType.LIMIT && order.getPrice() <= 0) {
                     throw new Exception("Price should be greater than 0");
                 }
+
 
 
                 boolean isBuyOrder = order.getSide() == Side.BUY;
@@ -137,27 +148,27 @@ public class OrderBook {
         }
     }
 
-    public boolean modifyOrder(int orderId, double newPrice, int newQuantity){
-        try{
+    public boolean modifyOrder(int orderId, double newPrice, int newQuantity) {
+        try {
             Order order = activeOrders.get(orderId);
-            if(order == null){
+            if (order == null) {
                 System.out.println("Order not found: " + orderId);
                 throw new Exception("Order not found");
             }
-            if(newPrice<=0 ){
+            if (newPrice <= 0) {
                 throw new Exception("Price should be greater than 0");
             }
-            if(newQuantity <=0){
+            if (newQuantity <= 0) {
                 throw new Exception("Quantity should be greater than 0");
             }
 
 
-            if(order.getPrice()==newPrice && order.getQuantity()==newQuantity){
+            if (order.getPrice() == newPrice && order.getQuantity() == newQuantity) {
                 return true;
             }
 
-           boolean cancelledOrder = cancelOrder(orderId);
-            addOrder(new Order(order.getOrderId(), order.getSide(), order.getOrderType(), newPrice, newQuantity));
+            boolean cancelledOrder = cancelOrder(orderId);
+            addOrder(new Order(order.getOrderId(), order.getSide(), order.getOrderType(), newPrice, newQuantity, order.getSymbol()));
             return true;
         } catch (Exception e) {
             System.err.println("Failed to modify order: " + e.getMessage());

@@ -1,39 +1,39 @@
-import engine.Order;
-import engine.OrderBook;
-import engine.OrderType;
-import engine.Side;
+import engine.*;
 
-import static engine.Symbol.EUR_USD;
+import static engine.Symbol.*;
 
 public class Main {
     public static void main(String[] args) {
-        OrderBook orderBook = new OrderBook();
+        Exchange exchange = Exchange.getInstance();
 
-//
-//        Order buyOrder1 = new Order( Side.BUY, OrderType.LIMIT, 510.0, 70, EUR_USD);
-//        orderBook.addOrder(buyOrder1);
-//
-//
-//        // Add a SELL limit order: 100 units @ Rs. 500
-//        Order sellOrder1 = new Order( Side.SELL, OrderType.LIMIT, 500.0, 100,EUR_USD);
-//        orderBook.addOrder(sellOrder1);
-//
-//        // Add another BUY limit order that partially matches the rest
-//        Order buyOrder2 = new Order( Side.BUY, OrderType.LIMIT, 500.0, 50,EUR_USD);
-//        orderBook.addOrder(buyOrder2);
-//
-//        // Add a SELL market order (should match existing BUY order)
-//        Order sellMarketOrder = new Order( Side.SELL, OrderType.MARKET, 10.0, 30, EUR_USD);
-//        orderBook.addOrder(sellMarketOrder);
-//
-//        // Add a SELL limit order that stays in the book (no match)
-//        Order sellOrder2 = new Order( Side.SELL, OrderType.LIMIT, 520.0, 100, EUR_USD);
-//        orderBook.addOrder(sellOrder2);
-//
-//        // Add a BUY market order (should match above sell order)
-//        Order buyMarketOrder = new Order( Side.BUY, OrderType.MARKET, 10.0, 1000, EUR_USD );
-//        orderBook.addOrder(buyMarketOrder);
+        Runnable task1 = () -> {
+            for (int i = 0; i < 10; i++) {
+                Order order = new Order( Side.BUY, OrderType.LIMIT, 100.0 + i, 10, Symbol.AAPL);
+                exchange.routeOrder(order, ActionType.ADD);
+            }
+        };
 
+        Runnable task2 = () -> {
+            for (int i = 0; i < 10; i++) {
+                Order order = new Order( Side.SELL, OrderType.LIMIT, 1000.0 + i, 10, Symbol.AAPL);
+                exchange.routeOrder(order, ActionType.ADD);
+            }
+        };
+
+        Thread thread1 = new Thread(task1);
+        Thread thread2 = new Thread(task2);
+
+        thread1.start();
+        thread2.start();
+
+        try {
+            thread1.join();
+            thread2.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        OrderBook orderBook = exchange.getOrCreateOrderBook(Symbol.AAPL);
         System.out.println(orderBook);
     }
 }
